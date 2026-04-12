@@ -1,2 +1,6 @@
-/data
-/MovieDataset.csv
+# Ignore datasets
+data/
+*.csv
+
+# But keep structure
+!data/.gitkeep
