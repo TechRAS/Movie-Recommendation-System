@@ -1,6 +1,3 @@
-# Ignore datasets
 data/
 *.csv
-
-# But keep structure
-!data/.gitkeep
+*.npy
