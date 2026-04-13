@@ -6,9 +6,6 @@ import requests
 from pathlib import Path
 from functools import lru_cache
 
-# ─────────────────────────────────────────────
-# CONFIG
-# ─────────────────────────────────────────────
 DATA_DIR               = Path("data")
 MOVIE_FILE             = DATA_DIR / "movies_enhanced.pkl"
 SIMILARITY_FILE        = DATA_DIR / "similarity_matrix.npy"
@@ -26,12 +23,6 @@ PLACEHOLDER_IMG = (
     "%3C/svg%3E"
 )
 
-# ─────────────────────────────────────────────
-# GLOBAL CSS
-# IMPORTANT: No single quotes inside style="..." attributes.
-# All font-family declarations use unquoted names or CSS classes.
-# This is what caused raw HTML to appear in the previous version.
-# ─────────────────────────────────────────────
 CINEMA_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,600&family=Raleway:wght@300;400;500;600&display=swap');
@@ -142,10 +133,6 @@ window._cinePlaceholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/20
 </script>
 """
 
-
-# ─────────────────────────────────────────────
-# CARD BUILDER — uses CSS classes, no inline single-quoted font-family
-# ─────────────────────────────────────────────
 def build_card(movie, poster_url):
     title    = str(movie.get("title", "Untitled")).replace('"', "&quot;").replace("'", "&#39;")
     overview = str(movie.get("overview", ""))[:200].strip()
@@ -178,10 +165,6 @@ def build_card(movie, poster_url):
         '</div>'
     )
 
-
-# ─────────────────────────────────────────────
-# UI HELPERS
-# ─────────────────────────────────────────────
 def hero_header():
     st.markdown(
         '<div style="padding:2.5rem 0 1.5rem;text-align:center;'
@@ -217,10 +200,6 @@ def section_heading(text, sub=""):
         unsafe_allow_html=True,
     )
 
-
-# ─────────────────────────────────────────────
-# DATA LOADING
-# ─────────────────────────────────────────────
 @st.cache_resource(show_spinner=False)
 def load_data():
     try:
@@ -246,10 +225,6 @@ def load_data():
         st.error(f"Load error: {e}")
         return None, None, None, None
 
-
-# ─────────────────────────────────────────────
-# POSTER
-# ─────────────────────────────────────────────
 @lru_cache(maxsize=2000)
 def fetch_poster(tmdb_id):
     try:
@@ -275,12 +250,6 @@ def poster_from_row(movie):
     except Exception:
         return PLACEHOLDER_IMG
 
-
-# ─────────────────────────────────────────────
-# RECOMMENDERS
-# ─────────────────────────────────────────────
-
-# Stopwords to ignore when comparing titles
 _TITLE_STOP = {
     "the","a","an","of","in","on","at","to","and","or","for",
     "with","de","la","le","das","die","der","el","los","les",
@@ -335,7 +304,6 @@ def recommend_content(title, movies, similarity, top_n=12, genre_filter=None):
     if len(idx) == 0:
         return pd.DataFrame()
 
-    # Pull a large pool (top_n * 6) so title-boost can re-rank effectively
     sim_scores = sorted(enumerate(similarity[idx[0]]), key=lambda x: x[1], reverse=True)[1:top_n * 6 + 1]
     recs = movies.iloc[[i for i, _ in sim_scores]].copy()
     recs["_sim"] = [s for _, s in sim_scores]
@@ -396,11 +364,6 @@ def recommend_collaborative(user_id, user_matrix, pred_ratings, movies, top_n=12
     return recs.nlargest(top_n, "_pred")
 
 
-# ─────────────────────────────────────────────
-# GRID RENDERER
-# Cards use CSS classes so no inline font-family quotes.
-# Each card is ONE st.markdown() call — avoids nested unsafe HTML issues.
-# ─────────────────────────────────────────────
 def render_grid(recs, n_cols=3):
     items = list(recs.iterrows())
     for row_start in range(0, len(items), n_cols):
@@ -414,10 +377,6 @@ def render_grid(recs, n_cols=3):
                 st.empty()
         st.markdown('<div class="cin-gap"></div>', unsafe_allow_html=True)
 
-
-# ─────────────────────────────────────────────
-# SIDEBAR
-# ─────────────────────────────────────────────
 def build_sidebar(movies):
     with st.sidebar:
         st.markdown(
@@ -461,10 +420,6 @@ def build_sidebar(movies):
 
     return mode, genre_filter, top_n
 
-
-# ─────────────────────────────────────────────
-# MAIN
-# ─────────────────────────────────────────────
 def main():
     st.set_page_config(
         page_title="CineMatch", page_icon="🎬",
@@ -480,7 +435,6 @@ def main():
     mode, genre_filter, top_n = build_sidebar(movies)
     hero_header()
 
-    # ── Content / Hybrid ──────────────────────
     if mode in ("Content-Based", "Hybrid (Recommended)"):
         section_heading("Find Similar Films",
                         "Pick a movie you love — we will find what to watch next.")
@@ -513,7 +467,6 @@ def main():
             )
             render_grid(recs, n_cols=3)
 
-    # ── Collaborative ─────────────────────────
     else:
         section_heading("Personalised For You",
                         "We use your rating history to surface films you will love.")
@@ -546,7 +499,6 @@ def main():
                 section_heading(f"Recommended for User {selected_user}", f"{len(recs)} films")
                 render_grid(recs, n_cols=3)
 
-    # ── Rating panel ──────────────────────────
     _r1 = st.session_state.get("recs")
     _r2 = st.session_state.get("collab_recs")
     all_recs = _r1 if (_r1 is not None and not _r1.empty) else _r2
@@ -581,7 +533,6 @@ def main():
                 df.to_csv(RATINGS_FILE, index=False)
                 st.success(f"{len(new_ratings)} rating(s) saved — re-run Preprocessing.py to update the model.")
 
-    # ── Footer ────────────────────────────────
     st.markdown(
         '<div style="margin-top:4rem;padding:1.2rem 0;'
         'border-top:1px solid rgba(232,168,56,0.12);text-align:center;">'
@@ -592,7 +543,5 @@ def main():
         unsafe_allow_html=True,
     )
 
-
 if __name__ == "__main__":
     main()
-
